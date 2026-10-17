@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelolaku - Perencana & Pencatat Uang Bulanan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Visual Reports -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Navigation / Header -->
+    <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white/15 p-2.5 rounded-2xl backdrop-blur-md border border-white/20">
+                        <i class="fa-solid fa-wallet text-2xl text-amber-300"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-extrabold tracking-tight">Kelolaku</h1>
+                        <p class="text-xs text-indigo-200">Kalkulator Pengeluaran & Alokasi Otomatis</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Month & Year Selector -->
+            <div class="flex items-center gap-2 bg-indigo-800/60 p-1.5 rounded-xl border border-indigo-500/30 w-full sm:w-auto justify-center">
+                <button onclick="changeMonth(-1)" class="p-1.5 text-indigo-200 hover:text-white rounded-lg hover:bg-indigo-600/50 transition">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+                <input type="month" id="selectedMonth" onchange="onMonthChange()" class="bg-transparent text-white font-semibold text-xs text-center focus:outline-none cursor-pointer">
+                <button onclick="changeMonth(1)" class="p-1.5 text-indigo-200 hover:text-white rounded-lg hover:bg-indigo-600/50 transition">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+        <!-- Quick Budget Allocator Banner -->
+        <section class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 text-white shadow-lg border border-indigo-500/20">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 px-3 py-1 rounded-full text-xs font-semibold">
+                        <i class="fa-solid fa-wand-magic-sparkles text-xs"></i> Fitur Alokasi Cerdas
+                    </div>
+                    <h2 class="text-lg font-bold">Atur & Bagi Uang Bulanan Otomatis</h2>
+                    <p class="text-xs text-indigo-200 max-w-xl">Masukkan total gaji/pemasukan bulananmu, lalu pilih metode penganggaran untuk langsung membagi target pengeluaran dan tabungan secara tepat.</p>
+                </div>
+                <button onclick="openAutoAllocateModal()" class="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold px-5 py-3 rounded-2xl text-xs transition shadow-md shadow-amber-500/20 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-calculator text-sm"></i> Hitung & Bagi Uang Sekarang
+                </button>
+            </div>
+        </section>
+
+        <!-- Financial Overview Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- Income Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center text-slate-400 mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider">Total Uang Masuk</span>
+                        <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-arrow-down-left"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-slate-800" id="incomeDisplay">Rp 0</h3>
+                </div>
+                <button onclick="openIncomeModal()" class="mt-4 text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                    <i class="fa-solid fa-pen-to-square"></i> Ubah Pemasukan
+                </button>
+            </div>
+
+            <!-- Expense Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center text-slate-400 mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider">Total Uang Keluar</span>
+                        <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-arrow-up-right"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-rose-600" id="expenseDisplay">Rp 0</h3>
+                </div>
+                <div class="mt-4 text-[11px] text-slate-400" id="txCountText">
+                    0 Transaksi bulan ini
+                </div>
+            </div>
+
+            <!-- Balance Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center text-slate-400 mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider">Sisa Saldo Bulanan</span>
+                        <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-slate-800" id="balanceDisplay">Rp 0</h3>
+                </div>
+                <p class="mt-4 text-[11px] text-slate-400" id="balanceRatioText">Sisa 100% dari pemasukan</p>
+            </div>
+
+            <!-- Target Budget Status -->
+            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 rounded-2xl shadow-md flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center text-indigo-200 mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider">Target Batas Pengeluaran</span>
+                        <i class="fa-solid fa-bullseye text-amber-400"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-white" id="targetBudgetDisplay">Rp 0</h3>
+                </div>
+                <div class="mt-3">
+                    <div class="flex justify-between text-[11px] text-slate-300 mb-1">
+                        <span id="targetUsageText">Penggunaan: 0%</span>
+                        <span id="targetRemainingText">Sisa: Rp 0</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                        <div id="targetProgressBar" class="bg-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Dynamic Budget Breakdown Preview (New Section) -->
+        <section id="allocationSummarySection" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-diagram text-indigo-600"></i> Pembagian Pos Keuangan Bulanan
+                    </h2>
+                    <p class="text-xs text-slate-400">Rincian pembagian otomatis dari uang bulanan yang kamu atur.</p>
+                </div>
+                <span id="appliedMethodBadge" class="text-[11px] font-semibold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">
+                    Metode 50/30/20
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="allocationCardsContainer">
+                <!-- Dynamically Rendered by JS -->
+            </div>
+        </section>
+
+        <!-- Quick Actions & Target Goals Management -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Side: Target Pengeluaran per Kategori -->
+            <div class="lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-bullseye text-indigo-600"></i> Target Anggaran Tiap Kategori
+                            </h2>
+                            <p class="text-xs text-slate-400">Batas maksimal uang keluar berdasarkan kategori per bulan.</p>
+                        </div>
+                        <button onclick="openTargetModal()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders"></i> Atur Target
+                        </button>
+                    </div>
+
+                    <!-- Category Target List -->
+                    <div id="categoryTargetsContainer" class="space-y-3.5 mt-2">
+                        <!-- Dynamic rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Add Transaction Form -->
+            <div class="lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h2 class="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-plus text-rose-500"></i> Catat Pengeluaran Baru
+                </h2>
+                <p class="text-xs text-slate-400 mb-4">Hitung langsung uang keluar kamu hari ini.</p>
+
+                <form id="expenseForm" onsubmit="handleAddExpense(event)" class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama / Keterangan Pengeluaran</label>
+                        <input type="text" id="expTitle" required placeholder="Contoh: Makan siang, Pulsa, Listrik"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500 transition">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label>
+                            <input type="number" id="expAmount" required min="100" placeholder="50000"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
+                            <select id="expCategory" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500 transition">
+                                <option value="Makanan & Minuman">🍔 Makanan & Minuman</option>
+                                <option value="Transportasi">🚗 Transportasi & Bensin</option>
+                                <option value="Belanja & Kebutuhan">🛒 Belanja Bulanan</option>
+                                <option value="Tagihan & Utilitas">⚡ Tagihan & Listrik</option>
+                                <option value="Hiburan & Gaya Hidup">🎬 Hiburan & Main</option>
+                                <option value="Kesehatan">💊 Kesehatan</option>
+                                <option value="Lainnya">📦 Lain-lain</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Transaksi</label>
+                        <input type="date" id="expDate" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500 transition">
+                    </div>
+
+                    <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md shadow-rose-200 flex items-center justify-center gap-2 active:scale-98">
+                        <i class="fa-solid fa-minus-circle"></i> Simpan Pengeluaran
+                    </button>
+                </form>
+            </div>
+
+        </section>
+
+        <!-- Analytics & Transaction History -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Category Chart Breakdown -->
+            <div class="lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-between">
+                <div class="w-full">
+                    <h2 class="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-indigo-600"></i> Proporsi Uang Keluar
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-4">Kemana saja uang kamu habis bulan ini.</p>
+                </div>
+
+                <div class="w-full relative h-60 flex items-center justify-center">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+
+                <div id="noChartData" class="hidden text-center py-8 text-slate-400 text-xs">
+                    Belum ada data pengeluaran untuk bulan ini.
+                </div>
+            </div>
+
+            <!-- Transaction History List -->
+            <div class="lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-indigo-600"></i> Rincian Pengeluaran Keluar
+                        </h2>
+                        <p class="text-xs text-slate-400">Daftar semua pengeluaran pada bulan terpilih.</p>
+                    </div>
+
+                    <!-- Category Filter Dropdown -->
+                    <select id="filterCategory" onchange="renderTransactions()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-600 focus:outline-none">
+                        <option value="ALL">Semua Kategori</option>
+                        <option value="Makanan & Minuman">Makanan & Minuman</option>
+                        <option value="Transportasi">Transportasi</option>
+                        <option value="Belanja & Kebutuhan">Belanja Bulanan</option>
+                        <option value="Tagihan & Utilitas">Tagihan</option>
+                        <option value="Hiburan & Gaya Hidup">Hiburan</option>
+                        <option value="Kesehatan">Kesehatan</option>
+                        <option value="Lainnya">Lain-lain</option>
+                    </select>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-[11px] font-bold text-slate-400 uppercase bg-slate-50 border-b border-slate-100">
+                                <th class="py-2.5 px-3 rounded-l-lg">Deskripsi</th>
+                                <th class="py-2.5 px-3">Kategori</th>
+                                <th class="py-2.5 px-3">Tanggal</th>
+                                <th class="py-2.5 px-3 text-right">Nominal</th>
+                                <th class="py-2.5 px-3 text-center rounded-r-lg">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionList" class="divide-y divide-slate-100 text-xs">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="emptyTxState" class="hidden text-center py-10">
+                    <div class="bg-indigo-50 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 text-indigo-500">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <p class="text-xs font-medium text-slate-600">Belum ada catatan pengeluaran</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Tambahkan pengeluaranmu pada form di atas.</p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal: Atur Pemasukan Bulanan -->
+    <div id="incomeModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-money-bill-wave text-emerald-500"></i> Pemasukan Bulanan
+                </h3>
+                <button onclick="closeModal('incomeModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form id="incomeForm" onsubmit="handleSaveIncome(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah Pemasukan / Gaji (Rp)</label>
+                    <input type="number" id="incomeInput" required min="0" placeholder="Contoh: 5000000"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                    <p class="text-[10px] text-slate-400 mt-1">Uang masuk ini digunakan sebagai acuan batas sisa uang bulanan kamu.</p>
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md shadow-emerald-200 active:scale-98">
+                    Simpan Pemasukan
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Auto Allocation / Pembagian Uang Bulanan (NEW) -->
+    <div id="autoAllocateModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-200 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> Hitung & Bagi Uang Bulanan
+                </h3>
+                <button onclick="closeModal('autoAllocateModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4">Aplikasi akan menghitung pembagian uang bulananmu secara otomatis ke tiap kategori pengeluaran dan tabungan.</p>
+
+            <form id="autoAllocateForm" onsubmit="handleApplyAutoAllocation(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Total Pemasukan / Gaji Bulanan (Rp)</label>
+                    <input type="number" id="allocIncomeInput" required min="1000" placeholder="5000000" oninput="calculateAllocationPreview()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Metode Penganggaran</label>
+                    <select id="allocMethod" onchange="calculateAllocationPreview()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="50-30-20">Aturan 50 / 30 / 20 (Kebutuhan 50%, Keinginan 30%, Tabungan 20%)</option>
+                        <option value="60-20-20">Aturan 60 / 20 / 20 (Kebutuhan 60%, Keinginan 20%, Tabungan 20%)</option>
+                        <option value="70-20-10">Aturan 70 / 20 / 10 (Kebutuhan 70%, Keinginan 20%, Tabungan 10%)</option>
+                    </select>
+                </div>
+
+                <!-- Live Preview of Allocation -->
+                <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100 space-y-3">
+                    <h4 class="text-xs font-bold text-indigo-900 flex items-center justify-between">
+                        <span>Hasil Pembagian Otomatis:</span>
+                        <span id="previewTotalIncomeText" class="text-indigo-600 font-extrabold">Rp 0</span>
+                    </h4>
+
+                    <div class="space-y-2 text-xs" id="allocationPreviewDetails">
+                        <!-- Calculated dynamically -->
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md shadow-indigo-200 active:scale-98 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check-circle"></i> Terapkan Pembagian Ini Ke Target Bulanan
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Atur Target Anggaran per Kategori -->
+    <div id="targetModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-200 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-600"></i> Atur Target Kategori
+                </h3>
+                <button onclick="closeModal('targetModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4">Tentukan batas maksimal uang keluar bulanan untuk tiap kategori.</p>
+
+            <form id="targetForm" onsubmit="handleSaveTargets(event)" class="space-y-3.5">
+                <div id="targetInputsContainer" class="space-y-3">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md shadow-indigo-200 active:scale-98">
+                        Simpan Target Anggaran
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Alert / Toast Modal -->
+    <div id="customAlert" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-3xl p-6 max-w-xs w-full mx-4 shadow-2xl text-center transform scale-95 transition-transform duration-200">
+            <div id="alertIconContainer" class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-indigo-100 text-indigo-600">
+                <i id="alertIcon" class="fa-solid fa-circle-info text-xl"></i>
+            </div>
+            <h4 id="alertTitle" class="font-bold text-slate-800 text-sm mb-1">Informasi</h4>
+            <p id="alertMsg" class="text-xs text-slate-500 mb-4"></p>
+            <button onclick="closeModal('customAlert')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 rounded-xl text-xs transition">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Default App State
+        let currentYearMonth = '';
+        let incomes = {}; // { 'YYYY-MM': number }
+        let currentMethod = '50-30-20';
+        let categoryTargets = {
+            'Makanan & Minuman': 1500000,
+            'Transportasi': 500000,
+            'Belanja & Kebutuhan': 1000000,
+            'Tagihan & Utilitas': 750000,
+            'Hiburan & Gaya Hidup': 500000,
+            'Kesehatan': 300000,
+            'Lainnya': 300000
+        };
+        let transactions = [];
+        let categoryChartInstance = null;
+
+        const CATEGORIES = [
+            'Makanan & Minuman',
+            'Transportasi',
+            'Belanja & Kebutuhan',
+            'Tagihan & Utilitas',
+            'Hiburan & Gaya Hidup',
+            'Kesehatan',
+            'Lainnya'
+        ];
+
+        // Mapping categories to Budget Groups (Kebutuhan, Keinginan, Tabungan/Lainnya)
+        const CATEGORY_GROUPS = {
+            'Makanan & Minuman': 'Kebutuhan (Needs)',
+            'Transportasi': 'Kebutuhan (Needs)',
+            'Belanja & Kebutuhan': 'Kebutuhan (Needs)',
+            'Tagihan & Utilitas': 'Kebutuhan (Needs)',
+            'Kesehatan': 'Kebutuhan (Needs)',
+            'Hiburan & Gaya Hidup': 'Keinginan (Wants)',
+            'Lainnya': 'Tabungan / Cadangan'
+        };
+
+        const CATEGORY_ICONS = {
+            'Makanan & Minuman': 'fa-burger text-amber-500 bg-amber-50',
+            'Transportasi': 'fa-car text-blue-500 bg-blue-50',
+            'Belanja & Kebutuhan': 'fa-cart-shopping text-emerald-500 bg-emerald-50',
+            'Tagihan & Utilitas': 'fa-bolt text-purple-500 bg-purple-50',
+            'Hiburan & Gaya Hidup': 'fa-film text-rose-500 bg-rose-50',
+            'Kesehatan': 'fa-kit-medical text-teal-500 bg-teal-50',
+            'Lainnya': 'fa-box text-slate-500 bg-slate-50'
+        };
+
+        const CATEGORY_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#f43f5e', '#14b8a6', '#64748b'];
+
+        window.onload = function() {
+            // Set default date input to today
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            
+            currentYearMonth = `${yyyy}-${mm}`;
+            document.getElementById('selectedMonth').value = currentYearMonth;
+            document.getElementById('expDate').value = `${yyyy}-${mm}-${dd}`;
+
+            // Load sample data
+            initSampleData();
+
+            // Initial UI Render
+            renderDashboard();
+        };
+
+        function initSampleData() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+
+            incomes[`${yyyy}-${mm}`] = 6000000;
+
+            transactions = [
+                {
+                    id: 'tx-1',
+                    title: 'Makan Siang Resto',
+                    amount: 45000,
+                    category: 'Makanan & Minuman',
+                    date: `${yyyy}-${mm}-02`
+                },
+                {
+                    id: 'tx-2',
+                    title: 'Bensin & Tol',
+                    amount: 150000,
+                    category: 'Transportasi',
+                    date: `${yyyy}-${mm}-05`
+                },
+                {
+                    id: 'tx-3',
+                    title: 'Belanja Mingguan Supermarket',
+                    amount: 480000,
+                    category: 'Belanja & Kebutuhan',
+                    date: `${yyyy}-${mm}-08`
+                },
+                {
+                    id: 'tx-4',
+                    title: 'Tagihan Listrik & WiFi',
+                    amount: 550000,
+                    category: 'Tagihan & Utilitas',
+                    date: `${yyyy}-${mm}-10`
+                },
+                {
+                    id: 'tx-5',
+                    title: 'Nonton Bioskop & Kopi',
+                    amount: 120000,
+                    category: 'Hiburan & Gaya Hidup',
+                    date: `${yyyy}-${mm}-12`
+                }
+            ];
+        }
+
+        function formatRupiah(num) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
+        }
+
+        function changeMonth(delta) {
+            const [y, m] = currentYearMonth.split('-').map(Number);
+            const date = new Date(y, m - 1 + delta, 1);
+            const newY = date.getFullYear();
+            const newM = String(date.getMonth() + 1).padStart(2, '0');
+            currentYearMonth = `${newY}-${newM}`;
+            document.getElementById('selectedMonth').value = currentYearMonth;
+            renderDashboard();
+        }
+
+        function onMonthChange() {
+            const val = document.getElementById('selectedMonth').value;
+            if (val) {
+                currentYearMonth = val;
+                renderDashboard();
+            }
+        }
+
+        function getCurrentTransactions() {
+            return transactions.filter(t => t.date.startsWith(currentYearMonth));
+        }
+
+        function renderDashboard() {
+            const currentTx = getCurrentTransactions();
+            const currentIncome = incomes[currentYearMonth] || 0;
+
+            // Calculate totals
+            const totalExpense = currentTx.reduce((sum, t) => sum + t.amount, 0);
+            const balance = currentIncome - totalExpense;
+
+            // Calculate target total
+            const totalTargetBudget = Object.values(categoryTargets).reduce((a, b) => a + b, 0);
+
+            // Update UI Displays
+            document.getElementById('incomeDisplay').textContent = formatRupiah(currentIncome);
+            document.getElementById('expenseDisplay').textContent = formatRupiah(totalExpense);
+            document.getElementById('balanceDisplay').textContent = formatRupiah(balance);
+            document.getElementById('targetBudgetDisplay').textContent = formatRupiah(totalTargetBudget);
+            
+            document.getElementById('txCountText').textContent = `${currentTx.length} transaksi keluar bulan ini`;
+
+            // Balance Ratio
+            if (currentIncome > 0) {
+                const ratio = Math.max(0, Math.round((balance / currentIncome) * 100));
+                document.getElementById('balanceRatioText').textContent = `Sisa ${ratio}% dari pemasukan`;
+            } else {
+                document.getElementById('balanceRatioText').textContent = 'Pemasukan belum diatur';
+            }
+
+            // Target Budget Progress
+            const targetUsage = totalTargetBudget > 0 ? Math.min(100, Math.round((totalExpense / totalTargetBudget) * 100)) : 0;
+            const targetRemaining = Math.max(0, totalTargetBudget - totalExpense);
+            
+            document.getElementById('targetUsageText').textContent = `Penggunaan: ${targetUsage}%`;
+            document.getElementById('targetRemainingText').textContent = `Sisa: ${formatRupiah(targetRemaining)}`;
+            
+            const progressBar = document.getElementById('targetProgressBar');
+            progressBar.style.width = `${targetUsage}%`;
+            if (targetUsage > 100) {
+                progressBar.className = 'bg-rose-500 h-2 rounded-full transition-all duration-500';
+            } else if (targetUsage > 80) {
+                progressBar.className = 'bg-amber-400 h-2 rounded-full transition-all duration-500';
+            } else {
+                progressBar.className = 'bg-emerald-400 h-2 rounded-full transition-all duration-500';
+            }
+
+            // Render Subviews
+            renderAllocationCards(currentIncome, currentTx);
+            renderCategoryTargets(currentTx);
+            renderTransactions();
+            renderChart(currentTx);
+        }
+
+        function renderAllocationCards(income, currentTx) {
+            const container = document.getElementById('allocationCardsContainer');
+            document.getElementById('appliedMethodBadge').textContent = `Metode ${currentMethod.replace(/-/g, '/')}`;
+
+            let needsPct = 0.5, wantsPct = 0.3, savingsPct = 0.2;
+            if (currentMethod === '60-20-20') { needsPct = 0.6; wantsPct = 0.2; savingsPct = 0.2; }
+            if (currentMethod === '70-20-10') { needsPct = 0.7; wantsPct = 0.2; savingsPct = 0.1; }
+
+            const needsTarget = income * needsPct;
+            const wantsTarget = income * wantsPct;
+            const savingsTarget = income * savingsPct;
+
+            // Calculate current spent per group
+            let spentNeeds = 0, spentWants = 0, spentSavings = 0;
+            currentTx.forEach(t => {
+                const group = CATEGORY_GROUPS[t.category] || 'Kebutuhan (Needs)';
+                if (group === 'Kebutuhan (Needs)') spentNeeds += t.amount;
+                else if (group === 'Keinginan (Wants)') spentWants += t.amount;
+                else spentSavings += t.amount;
+            });
+
+            const groups = [
+                { title: 'Kebutuhan Pokok', subtitle: 'Makanan, Transport, Tagihan, Kesehatan', target: needsTarget, spent: spentNeeds, color: 'emerald', icon: 'fa-house-lock' },
+                { title: 'Keinginan & Lifestyle', subtitle: 'Hiburan, Jajan, Hobi, Main', target: wantsTarget, spent: spentWants, color: 'rose', icon: 'fa-bag-shopping' },
+                { title: 'Tabungan & Cadangan', subtitle: 'Investasi, Dana Darurat, Lain-lain', target: savingsTarget, spent: spentSavings, color: 'indigo', icon: 'fa-piggy-bank' }
+            ];
+
+            container.innerHTML = '';
+            groups.forEach(g => {
+                const percent = g.target > 0 ? Math.min(100, Math.round((g.spent / g.target) * 100)) : 0;
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between space-y-3`;
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-800">${g.title}</h3>
+                                <p class="text-[10px] text-slate-400">${g.subtitle}</p>
+                            </div>
+                            <div class="w-7 h-7 rounded-lg bg-${g.color}-50 text-${g.color}-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid ${g.icon}"></i>
+                            </div>
+                        </div>
+                        <div class="text-lg font-extrabold text-slate-800 mt-1">${formatRupiah(g.target)}</div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[11px] font-semibold">
+                            <span class="text-slate-500">Terpakai: ${formatRupiah(g.spent)}</span>
+                            <span class="${g.spent > g.target ? 'text-rose-500 font-bold' : 'text-slate-600'}">${percent}%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-${g.spent > g.target ? 'rose-500' : 'indigo-600'} h-1.5 rounded-full transition-all duration-300" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openAutoAllocateModal() {
+            const currentIncome = incomes[currentYearMonth] || 5000000;
+            document.getElementById('allocIncomeInput').value = currentIncome;
+            document.getElementById('allocMethod').value = currentMethod;
+            calculateAllocationPreview();
+            openModal('autoAllocateModal');
+        }
+
+        function calculateAllocationPreview() {
+            const income = parseFloat(document.getElementById('allocIncomeInput').value) || 0;
+            const method = document.getElementById('allocMethod').value;
+            
+            document.getElementById('previewTotalIncomeText').textContent = formatRupiah(income);
+
+            let needsPct = 0.5, wantsPct = 0.3, savingsPct = 0.2;
+            if (method === '60-20-20') { needsPct = 0.6; wantsPct = 0.2; savingsPct = 0.2; }
+            if (method === '70-20-10') { needsPct = 0.7; wantsPct = 0.2; savingsPct = 0.1; }
+
+            const needsAmt = income * needsPct;
+            const wantsAmt = income * wantsPct;
+            const savingsAmt = income * savingsPct;
+
+            const container = document.getElementById('allocationPreviewDetails');
+            container.innerHTML = `
+                <div class="flex justify-between items-center py-1 border-b border-indigo-100/60">
+                    <span class="text-slate-600"><i class="fa-solid fa-basket-shopping text-emerald-500 w-4"></i> Kebutuhan Pokok (${needsPct*100}%)</span>
+                    <span class="font-bold text-slate-800">${formatRupiah(needsAmt)}</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-indigo-100/60">
+                    <span class="text-slate-600"><i class="fa-solid fa-gamepad text-rose-500 w-4"></i> Keinginan & Lifestyle (${wantsPct*100}%)</span>
+                    <span class="font-bold text-slate-800">${formatRupiah(wantsAmt)}</span>
+                </div>
+                <div class="flex justify-between items-center py-1">
+                    <span class="text-slate-600"><i class="fa-solid fa-piggy-bank text-indigo-500 w-4"></i> Tabungan / Cadangan (${savingsPct*100}%)</span>
+                    <span class="font-bold text-slate-800">${formatRupiah(savingsAmt)}</span>
+                </div>
+            `;
+        }
+
+        function handleApplyAutoAllocation(e) {
+            e.preventDefault();
+            const income = parseFloat(document.getElementById('allocIncomeInput').value) || 0;
+            const method = document.getElementById('allocMethod').value;
+
+            if (income <= 0) {
+                showAlert('Peringatan', 'Masukkan nominal pemasukan bulanan yang valid.');
+                return;
+            }
+
+            incomes[currentYearMonth] = income;
+            currentMethod = method;
+
+            let needsPct = 0.5, wantsPct = 0.3, savingsPct = 0.2;
+            if (method === '60-20-20') { needsPct = 0.6; wantsPct = 0.2; savingsPct = 0.2; }
+            if (method === '70-20-10') { needsPct = 0.7; wantsPct = 0.2; savingsPct = 0.1; }
+
+            const needsTotal = income * needsPct;
+            const wantsTotal = income * wantsPct;
+            const savingsTotal = income * savingsPct;
+
+            // Distribute across categories
+            categoryTargets['Makanan & Minuman'] = Math.round(needsTotal * 0.45);
+            categoryTargets['Belanja & Kebutuhan'] = Math.round(needsTotal * 0.25);
+            categoryTargets['Tagihan & Utilitas'] = Math.round(needsTotal * 0.15);
+            categoryTargets['Transportasi'] = Math.round(needsTotal * 0.10);
+            categoryTargets['Kesehatan'] = Math.round(needsTotal * 0.05);
+
+            categoryTargets['Hiburan & Gaya Hidup'] = Math.round(wantsTotal);
+            categoryTargets['Lainnya'] = Math.round(savingsTotal);
+
+            closeModal('autoAllocateModal');
+            renderDashboard();
+            showAlert('Alokasi Berhasil', `Gaji ${formatRupiah(income)} berhasil dibagi ke dalam kategori pengeluaran & tabungan bulanan kamu.`);
+        }
+
+        function renderCategoryTargets(currentTx) {
+            const container = document.getElementById('categoryTargetsContainer');
+            container.innerHTML = '';
+
+            CATEGORIES.forEach(cat => {
+                const target = categoryTargets[cat] || 0;
+                const spent = currentTx.filter(t => t.category === cat).reduce((sum, t) => sum + t.amount, 0);
+                const percent = target > 0 ? Math.min(100, Math.round((spent / target) * 100)) : 0;
+                const iconClass = CATEGORY_ICONS[cat] || 'fa-box text-slate-500 bg-slate-50';
+
+                const isOver = target > 0 && spent > target;
+
+                const card = document.createElement('div');
+                card.className = 'p-3 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg flex items-center justify-center ${iconClass.split(' ').slice(1).join(' ')}">
+                                <i class="fa-solid ${iconClass.split(' ')[0]} text-xs"></i>
+                            </div>
+                            <span class="font-bold text-slate-800">${cat}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-slate-800">${formatRupiah(spent)}</span>
+                            <span class="text-slate-400 font-normal"> / ${formatRupiah(target)}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                            <div class="${isOver ? 'bg-rose-500' : (percent > 85 ? 'bg-amber-500' : 'bg-indigo-600')} h-2 rounded-full transition-all duration-300" style="width: ${percent}%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-400">
+                            <span>Target Terpakai: ${percent}%</span>
+                            <span class="${isOver ? 'text-rose-500 font-bold' : ''}">
+                                ${isOver ? `Kelebihan ${formatRupiah(spent - target)}` : `Sisa ${formatRupiah(target - spent)}`}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderTransactions() {
+            const container = document.getElementById('transactionList');
+            const emptyState = document.getElementById('emptyTxState');
+            const filterCat = document.getElementById('filterCategory').value;
+
+            let currentTx = getCurrentTransactions();
+
+            if (filterCat !== 'ALL') {
+                currentTx = currentTx.filter(t => t.category === filterCat);
+            }
+
+            // Sort by date descending
+            currentTx.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            container.innerHTML = '';
+
+            if (currentTx.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            currentTx.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition';
+                
+                const iconClass = CATEGORY_ICONS[t.category] || 'fa-box text-slate-500 bg-slate-50';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg flex items-center justify-center ${iconClass.split(' ').slice(1).join(' ')}">
+                                <i class="fa-solid ${iconClass.split(' ')[0]} text-xs"></i>
+                            </div>
+                            <span class="font-bold text-slate-800">${escapeHtml(t.title)}</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-3">
+                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-medium">
+                            ${t.category}
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 text-slate-400 text-[11px]">
+                        ${t.date}
+                    </td>
+                    <td class="py-3 px-3 text-right font-extrabold text-rose-600">
+                        -${formatRupiah(t.amount)}
+                    </td>
+                    <td class="py-3 px-3 text-center">
+                        <button onclick="deleteTransaction('${t.id}')" class="text-slate-300 hover:text-rose-500 transition p-1 text-xs">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                container.appendChild(tr);
+            });
+        }
+
+        function renderChart(currentTx) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            const noData = document.getElementById('noChartData');
+
+            const categorySums = CATEGORIES.map(cat => {
+                return currentTx.filter(t => t.category === cat).reduce((sum, t) => sum + t.amount, 0);
+            });
+
+            const hasData = categorySums.some(s => s > 0);
+
+            if (!hasData) {
+                noData.classList.remove('hidden');
+                if (categoryChartInstance) categoryChartInstance.destroy();
+                return;
+            } else {
+                noData.classList.add('hidden');
+            }
+
+            if (categoryChartInstance) {
+                categoryChartInstance.destroy();
+            }
+
+            categoryChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: CATEGORIES,
+                    datasets: [{
+                        data: categorySums,
+                        backgroundColor: CATEGORY_COLORS,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                font: { size: 10, family: 'Plus Jakarta Sans' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: ${formatRupiah(context.raw)}`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+        }
+
+        function handleAddExpense(e) {
+            e.preventDefault();
+            const title = document.getElementById('expTitle').value.trim();
+            const amount = parseFloat(document.getElementById('expAmount').value);
+            const category = document.getElementById('expCategory').value;
+            const date = document.getElementById('expDate').value;
+
+            if (!title || isNaN(amount) || amount <= 0 || !date) {
+                showAlert('Peringatan', 'Harap isi semua data pengeluaran dengan benar.');
+                return;
+            }
+
+            const newTx = {
+                id: 'tx-' + Date.now(),
+                title,
+                amount,
+                category,
+                date
+            };
+
+            transactions.unshift(newTx);
+            document.getElementById('expenseForm').reset();
+            
+            // Set date back to current selected
+            document.getElementById('expDate').value = date;
+
+            renderDashboard();
+            showAlert('Berhasil Ditambahkan', `Pengeluaran "${title}" sebesar ${formatRupiah(amount)} berhasil dicatat.`);
+        }
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            renderDashboard();
+        }
+
+        function openIncomeModal() {
+            document.getElementById('incomeInput').value = incomes[currentYearMonth] || '';
+            openModal('incomeModal');
+        }
+
+        function handleSaveIncome(e) {
+            e.preventDefault();
+            const val = parseFloat(document.getElementById('incomeInput').value) || 0;
+            incomes[currentYearMonth] = val;
+            closeModal('incomeModal');
+            renderDashboard();
+            showAlert('Tersimpan', `Pemasukan bulan ${currentYearMonth} disimpan sebesar ${formatRupiah(val)}.`);
+        }
+
+        function openTargetModal() {
+            const container = document.getElementById('targetInputsContainer');
+            container.innerHTML = '';
+
+            CATEGORIES.forEach(cat => {
+                const div = document.createElement('div');
+                div.className = 'flex flex-col gap-1';
+                div.innerHTML = `
+                    <label class="text-xs font-semibold text-slate-700">${cat}</label>
+                    <input type="number" id="target_input_${cat}" value="${categoryTargets[cat] || 0}" min="0"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                `;
+                container.appendChild(div);
+            });
+
+            openModal('targetModal');
+        }
+
+        function handleSaveTargets(e) {
+            e.preventDefault();
+            CATEGORIES.forEach(cat => {
+                const input = document.getElementById(`target_input_${cat}`);
+                if (input) {
+                    categoryTargets[cat] = parseFloat(input.value) || 0;
+                }
+            });
+
+            closeModal('targetModal');
+            renderDashboard();
+            showAlert('Target Diperbarui', 'Target anggaran bulanan per kategori berhasil diperbarui.');
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('hidden');
+            setTimeout(() => {
+                el.classList.remove('opacity-0');
+                const box = el.querySelector('div');
+                if (box) {
+                    box.classList.remove('scale-95');
+                    box.classList.add('scale-100');
+                }
+            }, 10);
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('opacity-0');
+            const box = el.querySelector('div');
+            if (box) {
+                box.classList.remove('scale-100');
+                box.classList.add('scale-95');
+            }
+            setTimeout(() => {
+                el.classList.add('hidden');
+            }, 200);
+        }
+
+        function showAlert(title, msg) {
+            document.getElementById('alertTitle').textContent = title;
+            document.getElementById('alertMsg').textContent = msg;
+            openModal('customAlert');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
